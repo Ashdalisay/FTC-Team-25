@@ -72,13 +72,13 @@ public class AshleyFourWheelDriveTask extends Robot {
         GamepadTask.GamepadEvent event = (GamepadTask.GamepadEvent) e;
 
         if (event.kind == GamepadTask.EventKind.RIGHT_TRIGGER_DOWN) {
-            rightgrab.setPosition(RIGHT_GRAB_OPEN);
+            rightgrab.setPosition(RIGHT_GRAB_CLOSED);
 
         } else if (event.kind == GamepadTask.EventKind.LEFT_TRIGGER_DOWN){
             leftgrab.setPosition(LEFT_GRAB_OPEN);
 
         } else if( event.kind == GamepadTask.EventKind.RIGHT_BUMPER_DOWN){
-            rightgrab.setPosition(RIGHT_GRAB_CLOSED);
+            rightgrab.setPosition(RIGHT_GRAB_OPEN);
 
         } else if (event.kind == GamepadTask.EventKind.LEFT_BUMPER_DOWN) {
             leftgrab.setPosition(LEFT_GRAB_CLOSED);
