@@ -108,6 +108,7 @@ public class AshleyTwoWheelDriveTask extends Robot {
     public void start()
     {
         RobotLog.i("tea enter start");
+        // Instantiating Tank drive task
         driveTask = new TankDriveTask(this, drivetrain);
         this.addTask(driveTask);
         //this.addTask(new GamepadTask(this, GamepadTask.GamepadNumber. GAMEPAD_1));
