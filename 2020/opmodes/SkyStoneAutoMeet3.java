@@ -57,6 +57,11 @@ public class SkyStoneAutoMeet3 extends StandardFourMotorRobot {
     private Telemetry.Item imageWidthTlm;
     private Telemetry.Item pixelsPerInchTlm;
     private Telemetry.Item distanceBtWWebcamAndGrabberTlm;
+    private Telemetry.Item currRobotPositionTlm;
+    private Telemetry.Item initalRobotPositionTlm;
+    private Telemetry.Item secondInitalRobotPositionTlm;
+    private Telemetry.Item targetRobotPositionTlm;
+    private Telemetry.Item deltaRobotPositionTlm;
 
     private int numStonesSeen;
     private double numPixelsBtwImgMidptAndStoneMidpt;
@@ -96,6 +101,11 @@ public class SkyStoneAutoMeet3 extends StandardFourMotorRobot {
     private double realNumPixelsPerInch;
     private final int DISTANCE_FROM_WEBCAM_TO_GRABBER =1;
     private double distance;
+    private int currRobotPosition;
+    private int intialRobotPosition;
+    private int secondInitalRobotPosition;
+    private int targetRobotPosition;
+    private int deltaRobotPosition;
 
     private String stoneType;
 
@@ -292,6 +302,8 @@ public class SkyStoneAutoMeet3 extends StandardFourMotorRobot {
                 if (path.kind == EventKind.PATH_DONE)
                 {
                     RobotLog.i("move towards skyStone");
+                    intialRobotPosition = drivetrain1.getCurrentPosition();
+                    initalRobotPositionTlm.setValue(secondInitalRobotPositionTlm);
                     startStrafing();
                 }
             }
@@ -377,6 +389,8 @@ public class SkyStoneAutoMeet3 extends StandardFourMotorRobot {
                         drivetrain1.stop();*/
 
                         if (allianceColor == AllianceColor.RED) {
+                            secondInitalRobotPosition = drivetrain1.getCurrentPosition();
+                            secondInitalRobotPositionTlm.setValue(secondInitalRobotPosition);
                             goPickupSkystone(redDepotPath);
                             RobotLog.i("506 chose red depot path");
                             pathTlm.setValue("taking red depot path");
@@ -512,7 +526,11 @@ public class SkyStoneAutoMeet3 extends StandardFourMotorRobot {
         pixelsPerInchTlm = telemetry.addData("pixelsPerInch", "unknown");
         distanceBtWWebcamAndGrabberTlm = telemetry.addData("distance BtW Webcam and Grabber","unknown");
         RobotLog.ii(TAG,  "delta: " + delta);
-
+        currRobotPositionTlm = telemetry.addData("currRobotPosition", -1);
+        initalRobotPositionTlm = telemetry.addData("initalRobotPosition", -1);
+        secondInitalRobotPositionTlm = telemetry.addData("secondInitalRobotPosition",-1);
+        targetRobotPositionTlm = telemetry.addData("targetRobotPosition", -1);
+        deltaRobotPositionTlm = telemetry.addData("deltaRobotPosition", -1);
 
         drivetrain1 = new MechanumGearedDrivetrain(frontRight, backRight, frontLeft, backLeft);
         drivetrain1.resetEncoders();
