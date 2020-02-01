@@ -1,7 +1,6 @@
 package opmodes;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
 
@@ -15,9 +14,8 @@ import team25core.RobotEvent;
 import team25core.StandardFourMotorRobot;
 import team25core.StoneDetectionTask;
 
-@Autonomous(name = "AutoMeet2", group = "Team 25")
-@Disabled
-public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
+@Autonomous(name = "AutoMeet9", group = "Team 25")
+public class SkyStoneAutoILT extends StandardFourMotorRobot {
 
 
     private final static String TAG = "STONEZ";
@@ -26,13 +24,20 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
     private Servo grabberServo;
     private Servo foundationHookRightServo;
     private Servo foundationHookLeftServo;
-    private final double DOWN_GRABBER_SERVO = (float) 1/ (float)256.0;
-    private final double UP_GRABBER_SERVO = (float)80 / (float)256.0;
-    private final double OPEN_FOUNDATION_HOOK_RIGHT_SERVO = (float)89 / (float)256.0;
-    private final double OPEN_FOUNDATION_HOOK_LEFT_SERVO  = (float)10 / (float)256.0;
-    private final double CLOSE_FOUNDATION_HOOK_RIGHT_SERVO  = (float)215/ (float)256.0;  //FIX ALL FOUNDATION SERVO
-    private final double CLOSE_FOUNDATION_HOOK_LEFT_SERVO = (float)139 / (float)256.0;
 
+    private final double DOWN_GRABBER_SERVO = (float) 256/ (float)256.0;
+    private final double MID_GRABBER_SERVO = (float)  200/ (float)256.0;
+    private final double UP_GRABBER_SERVO = (float) 30/ (float)256.0;
+    private final double OPEN_FOUNDATION_HOOK_RIGHT_SERVO = (float)216 / (float)256.0;
+    private final double OPEN_FOUNDATION_HOOK_LEFT_SERVO  = (float)113 / (float)256.0;
+    private final double CLOSE_FOUNDATION_HOOK_RIGHT_SERVO  = (float)91/ (float)256.0;  //FIX ALL FOUNDATION SERVO
+    private final double CLOSE_FOUNDATION_HOOK_LEFT_SERVO = (float)238/ (float)256.0;
+
+    //private final double NUM_PIXELS_PER_INCH = 10;  //10 original 63
+    private final int STONE_LENGTH_IN_INCHES = 8; //14in
+
+    //private final float HALF_STONE_LENGTH_IN_PIXELS = Math.round(STONE_LENGTH_IN_INCHES/2 * NUM_PIXELS_PER_INCH); //FINDING THE MIDDLE OF THE ROBOT AND WHEN THE SKYSTONE LINES UP WITH THE MIDDLE OF
+    //private final double PIXELS_FROM_IMG_MIDPT_TO_LEFT_STONE = 15 * NUM_PIXELS_PER_INCH - HALF_STONE_LENGTH_IN_PIXELS ;
 
     private MechanumGearedDrivetrain drivetrain1;
 
@@ -47,7 +52,20 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
     private Telemetry.Item deltaTlm;
     private Telemetry.Item numStonesSeenTlm;
     private Telemetry.Item pathTlm;
+    private Telemetry.Item widthTlm;
+    private Telemetry.Item marginTlm;
+    private Telemetry.Item imageWidthTlm;
+    private Telemetry.Item pixelsPerInchTlm;
+    private Telemetry.Item distanceBtWWebcamAndGrabberTlm;
+    private Telemetry.Item currRobotPositionTlm;
+    private Telemetry.Item initalRobotPositionTlm;
+    private Telemetry.Item secondInitalRobotPositionTlm;
+    private Telemetry.Item targetRobotPositionTlm;
+    private Telemetry.Item deltaRobotPositionTlm;
+
     private int numStonesSeen;
+    private double numPixelsBtwImgMidptAndStoneMidpt;
+
     private DeadReckonPath redDepotPath;
     private DeadReckonPath blueDepotPath;
     private DeadReckonPath depotPath;
@@ -66,8 +84,7 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
     private DeadReckonPath blueSkyStoneUnderBridge;
     private DeadReckonPath redSkyStoneUnderBridge;
     private DeadReckonPath skyStoneUnderBridge;
-
-
+    private DeadReckonPath getCloserPath;
 
 
     private double confidence;
@@ -76,11 +93,24 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
     private double imageMidpoint;
     private double stoneMidpoint;
     private double delta;
-    private double margin = 50;
+    private double margin = 100;
     private double setColor;
+    private double width;
+    private int imageWidth;
     private boolean inCenter;
+    private double realNumPixelsPerInch;
+    private final int DISTANCE_FROM_WEBCAM_TO_GRABBER =1;
+    private double distance;
+    private int currRobotPosition;
+    private int intialRobotPosition;
+    private int secondInitalRobotPosition;
+    private int targetRobotPosition;
+    private int deltaRobotPosition;
+
     private String stoneType;
+
     private StoneDetectionTask.EventKind stoneKind;
+
     private final double STRAIGHT_SPEED = 0.5;
     private final double TURN_SPEED = 1;
 
@@ -185,7 +215,7 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
                 DeadReckonEvent path = (DeadReckonEvent) e;
                 if (path.kind == EventKind.PATH_DONE)
                 {
-                    grabberServo.setPosition(UP_GRABBER_SERVO);
+                    grabberServo.setPosition(MID_GRABBER_SERVO);
                     RobotLog.i("Done with taking stone to build");
                     moveUnderBridgeFromBuildSiteSkyStoneBuild();
 
@@ -217,7 +247,7 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
     }
     public void moveUnderBridgeFromBuildSiteFoundation()
     {
-        RobotLog.i("move Under bridge from bu");
+        RobotLog.i("move Under bridge from build");
 
 
         //starts when you have stone and want to move
@@ -258,7 +288,27 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
         });
     }
 
+    public void getCloserPath()
+    {
+        //FIXME
+        RobotLog.i("Move to Foundation");
 
+
+        //starts when you find a skystone
+        this.addTask(new DeadReckonTask(this, getCloserPath, drivetrain1){
+            @Override
+            public void handleEvent(RobotEvent e) {
+                DeadReckonEvent path = (DeadReckonEvent) e;
+                if (path.kind == EventKind.PATH_DONE)
+                {
+                    RobotLog.i("move towards skyStone");
+                    intialRobotPosition = drivetrain1.getCurrentPosition();
+                    initalRobotPositionTlm.setValue(secondInitalRobotPositionTlm);
+                    startStrafing();
+                }
+            }
+        });
+    }
     public void moveFoundation(final DeadReckonPath foundationPath)
     {
         //FIXME
@@ -298,6 +348,9 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
 
                 imageMidpoint = event.stones.get(0).getImageWidth() / 2.0;
                 stoneMidpoint = (event.stones.get(0).getWidth() / 2.0) + left;
+                width = event.stones.get(0).getWidth();
+                imageWidth = event.stones.get(0).getImageWidth();
+
                 stoneType = event.stones.get(0).getLabel();
                 stoneKind = event.kind;
                 delta = Math.abs(imageMidpoint - stoneMidpoint);
@@ -311,19 +364,33 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
                 stoneTlm.setValue(stoneKind);
                 deltaTlm.setValue(delta);
                 pathTlm.setValue(setColor);
+                widthTlm.setValue(width);
+                imageWidthTlm.setValue(imageWidth);
 
                 numStonesSeen = event.stones.size();
                 numStonesSeenTlm.setValue(numStonesSeen);
                 RobotLog.ii(TAG,"numStonesSeen",numStonesSeen);
 
                 if (event.kind == EventKind.OBJECTS_DETECTED) {
-                    if (Math.abs(imageMidpoint - stoneMidpoint) < margin) {
-                        inCenter = true;
+
+                    numPixelsBtwImgMidptAndStoneMidpt = stoneMidpoint - imageMidpoint;
+                    realNumPixelsPerInch = (width/8.0);
+                    pixelsPerInchTlm.setValue(realNumPixelsPerInch);
+                    distance = (double)(DISTANCE_FROM_WEBCAM_TO_GRABBER * realNumPixelsPerInch);
+                    distanceBtWWebcamAndGrabberTlm.setValue(distance);
+
+                    marginTlm.setValue(Math.abs(numPixelsBtwImgMidptAndStoneMidpt - distance));
+                    if ((numPixelsBtwImgMidptAndStoneMidpt > 0)  &&
+                            (Math.abs(numPixelsBtwImgMidptAndStoneMidpt - distance)  < margin)) {
+                    /* old detection if (Math.abs(imageMidpoint - stoneMidpoint) < margin) {
+                        inCenter = true
                         RobotLog.i("506 Found gold");
                         sdTask.stop();
-                        drivetrain1.stop();
+                        drivetrain1.stop();*/
 
                         if (allianceColor == AllianceColor.RED) {
+                            secondInitalRobotPosition = drivetrain1.getCurrentPosition();
+                            secondInitalRobotPositionTlm.setValue(secondInitalRobotPosition);
                             goPickupSkystone(redDepotPath);
                             RobotLog.i("506 chose red depot path");
                             pathTlm.setValue("taking red depot path");
@@ -368,23 +435,26 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
 
         blueSkyStoneUnderBridge = new DeadReckonPath();
         redSkyStoneUnderBridge = new DeadReckonPath();
+
+        getCloserPath = new DeadReckonPath();
         //add path to get to bridge
 
         blueDepotPath.stop();
-        blueDepotPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,2, STRAIGHT_SPEED);  //left
-        blueDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,7, -STRAIGHT_SPEED); //forward
+        blueDepotPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,0.2, -STRAIGHT_SPEED);  //
+        blueDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,1.6, -0.4); //
 
         redDepotPath.stop();
-        redDepotPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,3, STRAIGHT_SPEED); //left
-        redDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,7, -STRAIGHT_SPEED); //forward
+        redDepotPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,0.4, STRAIGHT_SPEED);  //might change to .2 //original 1.2
+        //redDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,1.5, -0.4);  //2
+        redDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,1.4, -0.4);  //1.2
 
         bmoveAcross.stop();
-        bmoveAcross.addSegment(DeadReckonPath.SegmentType.STRAIGHT,3 ,STRAIGHT_SPEED);
-        bmoveAcross.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,14, STRAIGHT_SPEED);
+        bmoveAcross.addSegment(DeadReckonPath.SegmentType.STRAIGHT,4.5 ,.2);
+        bmoveAcross.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,15.5, .4);
 
         rmoveAcross.stop();
-        rmoveAcross.addSegment(DeadReckonPath.SegmentType.STRAIGHT,3 ,STRAIGHT_SPEED);
-        rmoveAcross.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,14, -STRAIGHT_SPEED);
+        rmoveAcross.addSegment(DeadReckonPath.SegmentType.STRAIGHT,4.5  ,.3); //STRAIGHT_SPEED
+        rmoveAcross.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,12.7 , -.4);  //STRAIGHT_SPEED needs change decrease 3.6/7
 
         redFoundationPath.stop();
         redFoundationPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 6, STRAIGHT_SPEED);
@@ -395,6 +465,9 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
 
         redFoundationUnderBridge.stop();
         redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 9, -STRAIGHT_SPEED);
+        redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 5, STRAIGHT_SPEED);
+        redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 3, STRAIGHT_SPEED);
+        redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 7, -STRAIGHT_SPEED);
 
         blueFoundationPath.stop();
         blueFoundationPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 6, -STRAIGHT_SPEED);
@@ -405,12 +478,18 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
 
         blueFoundationUnderBridge.stop();
         blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 7.5, STRAIGHT_SPEED);
+        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT,6, STRAIGHT_SPEED);
+        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 4, -STRAIGHT_SPEED);
+        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,7.5  , STRAIGHT_SPEED);
 
         blueSkyStoneUnderBridge.stop();
-        blueSkyStoneUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 3.4, -STRAIGHT_SPEED);
+        blueSkyStoneUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 5, -STRAIGHT_SPEED);
 
         redSkyStoneUnderBridge.stop();
-        redSkyStoneUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 2.8, STRAIGHT_SPEED);
+        redSkyStoneUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 5, STRAIGHT_SPEED); //3.4 needs to be changed
+
+        getCloserPath.stop();
+        getCloserPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 5.62, -STRAIGHT_SPEED);
 
 
 
@@ -421,6 +500,7 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
     @Override
     public void init()
     {
+
         grabberServo = hardwareMap.servo.get("grabberServo");
         grabberServo.setPosition(UP_GRABBER_SERVO);
 
@@ -440,9 +520,17 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
         deltaTlm = telemetry.addData("delta", "unknown");
         numStonesSeenTlm = telemetry.addData("numStones",-1);
         pathTlm = telemetry.addData("AllianceClr", "unknown");
-
+        widthTlm = telemetry.addData("stoneWidth", "unknown");
+        imageWidthTlm = telemetry.addData("imageWidth", -1);
+        marginTlm = telemetry.addData("margin" , "unknown");
+        pixelsPerInchTlm = telemetry.addData("pixelsPerInch", "unknown");
+        distanceBtWWebcamAndGrabberTlm = telemetry.addData("distance BtW Webcam and Grabber","unknown");
         RobotLog.ii(TAG,  "delta: " + delta);
-
+        currRobotPositionTlm = telemetry.addData("currRobotPosition", -1);
+        initalRobotPositionTlm = telemetry.addData("initalRobotPosition", -1);
+        secondInitalRobotPositionTlm = telemetry.addData("secondInitalRobotPosition",-1);
+        targetRobotPositionTlm = telemetry.addData("targetRobotPosition", -1);
+        deltaRobotPositionTlm = telemetry.addData("deltaRobotPosition", -1);
 
         drivetrain1 = new MechanumGearedDrivetrain(frontRight, backRight, frontLeft, backLeft);
         drivetrain1.resetEncoders();
@@ -476,22 +564,13 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
             drivetrain1.strafe(-SkyStoneConstants25.STRAFE_SPEED);
         }
         loggingTlm.setValue("startStrafing:after starting to strafe");
-    }
-
-    public void parkUnderBridge()
-    {
-        this.addTask(new DeadReckonTask(this, path, drivetrain1));
+        grabberServo.setPosition(MID_GRABBER_SERVO);
     }
 
 
     @Override
     public void start()
     {
-
-
-        path.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 2.5, -1.0);
-
-
 
         loggingTlm = telemetry.addData("log", "unknown");
         handleEvntTlm = telemetry.addData("detecting","unknown");
@@ -514,7 +593,8 @@ public class SkyStoneAutoMeet1 extends StandardFourMotorRobot {
             RobotLog.i("start: before startStrafing");
             loggingTlm.setValue("start:in DEPOT about to startStrafing");
 
-            startStrafing();
+            //startStrafing();
+            getCloserPath();
         }
 
     }

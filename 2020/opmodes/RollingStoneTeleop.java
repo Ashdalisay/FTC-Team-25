@@ -43,7 +43,6 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import team25core.DeadmanMotorTask;
 import team25core.GamepadTask;
-import team25core.Robot;
 import team25core.RobotEvent;
 import team25core.RunToEncoderValueTask;
 import team25core.SingleShotTimerTask;
@@ -83,8 +82,8 @@ public class RollingStoneTeleop extends StandardFourMotorRobot {
     private final double DOWN_FOUNDATION_LEFT_SERVO = (float) 237/ 256.0;
     private final double UP_FOUNDATION_RIGHT_SERVO = (float) 212/ 256.0;
     private final double DOWN_FOUNDATION_RIGHT_SERVO = (float) 90/ 256.0;
-    private final double LIFT_POWER_UP = -0.5;
-    private final double LIFT_POWER_DOWN = 0.5;
+    private final double LIFT_POWER_UP = -1.0;
+    private final double LIFT_POWER_DOWN = 1.0;
     private final double INTAKE_OUT = 1;
     private final double INTAKE_IN = -1;
     private final double INTAKE_STOP = 0;
