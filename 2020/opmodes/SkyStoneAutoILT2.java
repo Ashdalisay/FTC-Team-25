@@ -25,9 +25,9 @@ public class SkyStoneAutoILT2 extends StandardFourMotorRobot {
     private Servo foundationHookRightServo;
     private Servo foundationHookLeftServo;
 
-    private final double DOWN_GRABBER_SERVO = (float) 256/ (float)256.0;
-    private final double MID_GRABBER_SERVO = (float)  200/ (float)256.0;
-    private final double UP_GRABBER_SERVO = (float) 30/ (float)256.0;
+    private final double DOWN_GRABBER_SERVO = (float) 0/ (float)256.0;
+    private final double MID_GRABBER_SERVO = (float)  50/ (float)256.0;
+    private final double UP_GRABBER_SERVO = (float) 210/ (float)256.0;
     private final double OPEN_FOUNDATION_HOOK_RIGHT_SERVO = (float)216 / (float)256.0;
     private final double OPEN_FOUNDATION_HOOK_LEFT_SERVO  = (float)113 / (float)256.0;
     private final double CLOSE_FOUNDATION_HOOK_RIGHT_SERVO  = (float)91/ (float)256.0;  //FIX ALL FOUNDATION SERVO
@@ -438,11 +438,11 @@ public class SkyStoneAutoILT2 extends StandardFourMotorRobot {
     }
 
 
-    public void loop()
-    {
-        super.loop();
-
-    }
+//    public void loop()
+//    {
+//        //super.loop();
+//
+//    }
     public void initPath()
     {
 
@@ -481,7 +481,7 @@ public class SkyStoneAutoILT2 extends StandardFourMotorRobot {
         blueDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,1.6, -0.4); //
 
         redDepotPath.stop();
-        redDepotPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,0.4, STRAIGHT_SPEED);  //might change to .2 //original 1.2
+        redDepotPath.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,-1.0, STRAIGHT_SPEED);  //going right //might change to .2 //original 1.2
         //redDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,1.5, -0.4);  //2
         redDepotPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,1.4, -0.4);  //1.2
 
@@ -503,9 +503,11 @@ public class SkyStoneAutoILT2 extends StandardFourMotorRobot {
         endRedFoundation.addSegment(DeadReckonPath.SegmentType.TURN, 130, -0.7); // turn the foundation into the building site
 
         redFoundationUnderBridge.stop();
-        redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 4, 0.8); // push foundation against wall
+        redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 5, 0.8); // push foundation against wall (modified)
         redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 11, -0.8); // backs up to skybridge
         redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 8, -0.4);//parks on inside of skybridge
+        redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 6, -0.8); // backs up to skybridge (modified)
+        redFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS,2, -0.4); //pushes up against bridge (NEW)
 
 
         blueFoundationPath.stop();
@@ -514,14 +516,15 @@ public class SkyStoneAutoILT2 extends StandardFourMotorRobot {
         blueFoundationPath.addSegment(DeadReckonPath.SegmentType.STRAIGHT,5,0.8); // push up to foundation
 
         endBlueFoundation.stop();
-        endBlueFoundation.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 10, -0.5); // pull foundation back
+        endBlueFoundation.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 8, -0.5); // pull foundation back
         endBlueFoundation.addSegment(DeadReckonPath.SegmentType.TURN, 130, 0.7); // turn the foundation into the building site
-        
-        blueFoundationUnderBridge.stop();
-        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 7, 0.8); // push foundation against wall
-        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 11, -0.8); // backs up to skybridge
-        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 8, 0.4);//parks on inside of skybridge
 
+        blueFoundationUnderBridge.stop();
+        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 14, 0.8); // push foundation against wall
+        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT,11,-0.8);//backs up (NEW LINE)
+        blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 2, 0.4);//pushes up on inside of skybridgee
+        //blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.STRAIGHT, 5, -0.8); // backs up to skybridge
+        //blueFoundationUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 2, 0.4);//pushes up on inside of skybridge
 
         blueSkyStoneUnderBridge.stop();
         blueSkyStoneUnderBridge.addSegment(DeadReckonPath.SegmentType.SIDEWAYS, 5, -STRAIGHT_SPEED);
@@ -565,7 +568,7 @@ public class SkyStoneAutoILT2 extends StandardFourMotorRobot {
     public void init()
     {
 
-
+        super.init();
         grabberServo = hardwareMap.servo.get("grabberServo");
         grabberServo.setPosition(UP_GRABBER_SERVO);
 
@@ -598,7 +601,7 @@ public class SkyStoneAutoILT2 extends StandardFourMotorRobot {
         deltaRobotPositionTlm = telemetry.addData("deltaRobotPosition", -1);
 
 
-        drivetrain1 = new MechanumGearedDrivetrain(frontRight, backRight, frontLeft, backLeft);
+        drivetrain1 = new MechanumGearedDrivetrain(this.frontRight, this.backRight, this.frontLeft, this.backLeft);
         drivetrain1.resetEncoders();
         drivetrain1.encodersOn();
         RobotLog.i("start moving");
